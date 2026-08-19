@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>六维人生系统</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.55.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -462,18 +463,22 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     <button class="modal-close" onclick="App.closeModal('modalSettings')">&times;</button>
     <div class="modal-title">&#9881; 设置</div>
     <div class="form-group">
-      <label>云端同步 URL (JSONBin.io 等)</label>
-      <input type="text" id="syncUrl" placeholder="https://api.jsonbin.io/v3/b/YOUR_BIN_ID">
+      <label>Supabase Project URL</label>
+      <input type="text" id="syncUrl" placeholder="https://YOUR_PROJECT.supabase.co">
     </div>
     <div class="form-group">
-      <label>Secret Key (可选)</label>
-      <input type="password" id="syncKey" placeholder="X-Master-Key">
+      <label>Supabase Publishable / Anon Key</label>
+      <input type="password" id="syncKey" placeholder="sb_publishable_... 或 anon key">
+    </div>
+    <div class="form-group">
+      <label>Workspace ID</label>
+      <input type="text" id="syncWorkspace" placeholder="main">
     </div>
     <div class="form-actions">
       <button class="btn" onclick="App.closeModal('modalSettings')">取消</button>
       <button class="btn btn-primary" onclick="App.saveSettings()">保存</button>
-      <button class="btn" onclick="App.syncToCloud()">&#8593; 上传云端</button>
-      <button class="btn" onclick="App.syncFromCloud()">&#8595; 下载云端</button>
+      <button class="btn" onclick="App.syncToCloud(true)">&#8593; 上传 Supabase</button>
+      <button class="btn" onclick="App.syncFromCloud(true)">&#8595; 下载 Supabase</button>
     </div>
     <div id="syncStatus" style="margin-top:12px;font-size:13px;color:var(--text-dim);text-align:center"></div>
   </div>
@@ -741,7 +746,7 @@ const DEFAULT_DATA = {
   history: {
     spacetime: [], material: [], relation: [], information: [], meaning: [], personal: []
   },
-  syncConfig: { url: '', secretKey: '' },
+  syncConfig: { url: '', secretKey: '', workspaceId: 'main' },
   resources: JSON.parse(JSON.stringify(DEFAULT_RESOURCES))
 };
 
@@ -758,13 +763,18 @@ const App = {
   nextResDynamicId: 3000,
   resStaticQuality: 0,
   resDynamicEfficiency: 0,
+  supabaseClient: null,
+  realtimeChannel: null,
+  isApplyingRemoteData: false,
+  saveTimer: null,
 
   // ─── Init ───
-  init() {
+  async init() {
     this.loadData();
     this.setDate();
     this.navigate('dashboard');
     this.updateBadges();
+    await this.initSupabase();
   },
 
   setDate() {
@@ -795,7 +805,8 @@ const App = {
           if (!this.data.history[k]) this.data.history[k] = [];
         });
         if (!this.data.logs) this.data.logs = [];
-        if (!this.data.syncConfig) this.data.syncConfig = { url: '', secretKey: '' };
+        if (!this.data.syncConfig) this.data.syncConfig = { url: '', secretKey: '', workspaceId: 'main' };
+        if (!this.data.syncConfig.workspaceId) this.data.syncConfig.workspaceId = 'main';
         if (!this.data.resources) {
           this.data.resources = JSON.parse(JSON.stringify(DEFAULT_RESOURCES));
         } else {
@@ -895,9 +906,76 @@ const App = {
     });
   },
 
-  saveData() {
+  saveData(options = {}) {
     localStorage.setItem('five-dim-life', JSON.stringify(this.data));
     this.updateBadges();
+    if (!options.localOnly && !this.isApplyingRemoteData) this.queueRemoteSave();
+  },
+
+  getCloudConfig() {
+    const cfg = this.data.syncConfig || {};
+    return {
+      url: (cfg.url || '').trim().replace(/\/$/, ''),
+      key: (cfg.secretKey || '').trim(),
+      workspaceId: (cfg.workspaceId || 'main').trim() || 'main'
+    };
+  },
+
+  hasCloudConfig() {
+    const cfg = this.getCloudConfig();
+    return !!(cfg.url && cfg.key && window.supabase);
+  },
+
+  sanitizeForCloud() {
+    const payload = JSON.parse(JSON.stringify(this.data));
+    delete payload.syncConfig;
+    return payload;
+  },
+
+  applyRemoteData(remoteData) {
+    if (!remoteData || !remoteData.scores || !remoteData.architectures) return false;
+    const syncConfig = this.data.syncConfig || { url: '', secretKey: '', workspaceId: 'main' };
+    this.isApplyingRemoteData = true;
+    this.data = Object.assign(JSON.parse(JSON.stringify(DEFAULT_DATA)), remoteData);
+    this.data.syncConfig = syncConfig;
+    this.saveData({ localOnly: true });
+    this.isApplyingRemoteData = false;
+    this.navigate(this.currentPage, this.currentDimension);
+    return true;
+  },
+
+  async initSupabase() {
+    if (!this.hasCloudConfig()) return false;
+    const cfg = this.getCloudConfig();
+    this.supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+    await this.syncFromCloud(false);
+    this.subscribeRemoteChanges();
+    return true;
+  },
+
+  subscribeRemoteChanges() {
+    if (!this.supabaseClient) return;
+    const cfg = this.getCloudConfig();
+    if (this.realtimeChannel) this.supabaseClient.removeChannel(this.realtimeChannel);
+    this.realtimeChannel = this.supabaseClient
+      .channel('lifeos-state-' + cfg.workspaceId)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'lifeos_states',
+        filter: 'id=eq.' + cfg.workspaceId
+      }, (payload) => {
+        if (payload.eventType === 'DELETE') return;
+        const nextData = payload.new && payload.new.data;
+        if (nextData) this.applyRemoteData(nextData);
+      })
+      .subscribe();
+  },
+
+  queueRemoteSave() {
+    if (!this.supabaseClient || !this.hasCloudConfig()) return;
+    clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => this.syncToCloud(false), 700);
   },
 
   updateBadges() {
@@ -1589,71 +1667,67 @@ const App = {
   openSettings() {
     document.getElementById('syncUrl').value = this.data.syncConfig.url || '';
     document.getElementById('syncKey').value = this.data.syncConfig.secretKey || '';
+    document.getElementById('syncWorkspace').value = this.data.syncConfig.workspaceId || 'main';
     document.getElementById('syncStatus').textContent = '';
     this.openModal('modalSettings');
   },
 
-  saveSettings() {
+  async saveSettings() {
     this.data.syncConfig.url = document.getElementById('syncUrl').value.trim();
     this.data.syncConfig.secretKey = document.getElementById('syncKey').value.trim();
-    this.saveData();
-    document.getElementById('syncStatus').textContent = '&#10003; 设置已保存';
+    this.data.syncConfig.workspaceId = document.getElementById('syncWorkspace').value.trim() || 'main';
+    this.saveData({ localOnly: true });
+    const ok = await this.initSupabase();
+    document.getElementById('syncStatus').textContent = ok
+      ? '✓ Supabase 已连接并开启实时同步'
+      : '✓ 设置已保存，本地模式运行';
   },
 
-  async syncToCloud() {
-    const url = this.data.syncConfig.url;
-    if (!url) { alert('请先配置云端同步 URL'); return; }
+  async syncToCloud(showStatus = true) {
+    if (!this.hasCloudConfig()) { if (showStatus) alert('请先配置 Supabase URL 和 publishable/anon key'); return false; }
+    if (!this.supabaseClient) this.supabaseClient = window.supabase.createClient(this.getCloudConfig().url, this.getCloudConfig().key);
     const statusEl = document.getElementById('syncStatus');
-    statusEl.textContent = '&#8987; 上传中...';
+    if (showStatus && statusEl) statusEl.textContent = '⌛ 上传中...';
     try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (this.data.syncConfig.secretKey) {
-        headers['X-Master-Key'] = this.data.syncConfig.secretKey;
-      }
-      const resp = await fetch(url, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(this.data)
+      const cfg = this.getCloudConfig();
+      const { error } = await this.supabaseClient.from('lifeos_states').upsert({
+        id: cfg.workspaceId,
+        data: this.sanitizeForCloud(),
+        updated_at: new Date().toISOString()
       });
-      if (resp.ok) {
-        statusEl.textContent = '&#10003; 已成功上传到云端';
-      } else {
-        statusEl.textContent = '&#10007; 上传失败: HTTP ' + resp.status;
-      }
+      if (error) throw error;
+      if (showStatus && statusEl) statusEl.textContent = '✓ 已成功上传到 Supabase';
+      return true;
     } catch(e) {
-      statusEl.textContent = '&#10007; 上传失败: ' + e.message;
+      if (showStatus && statusEl) statusEl.textContent = '✗ 上传失败: ' + e.message;
+      return false;
     }
   },
 
-  async syncFromCloud() {
-    const url = this.data.syncConfig.url;
-    if (!url) { alert('请先配置云端同步 URL'); return; }
+  async syncFromCloud(showStatus = true) {
+    if (!this.hasCloudConfig()) { if (showStatus) alert('请先配置 Supabase URL 和 publishable/anon key'); return false; }
+    if (!this.supabaseClient) this.supabaseClient = window.supabase.createClient(this.getCloudConfig().url, this.getCloudConfig().key);
     const statusEl = document.getElementById('syncStatus');
-    statusEl.textContent = '&#8987; 下载中...';
+    if (showStatus && statusEl) statusEl.textContent = '⌛ 下载中...';
     try {
-      const headers = {};
-      if (this.data.syncConfig.secretKey) {
-        headers['X-Master-Key'] = this.data.syncConfig.secretKey;
-      }
-      const resp = await fetch(url, { headers: headers });
-      if (resp.ok) {
-        let data;
-        // JSONBin.io v3 wraps data in a "record" field
-        const json = await resp.json();
-        data = json.record || json;
-        if (data.scores && data.architectures) {
-          this.data = data;
-          this.saveData();
-          statusEl.textContent = '&#10003; 已成功从云端下载';
-          this.navigate(this.currentPage, this.currentDimension);
-        } else {
-          statusEl.textContent = '&#10007; 云端数据格式无效';
-        }
+      const cfg = this.getCloudConfig();
+      const { data, error } = await this.supabaseClient
+        .from('lifeos_states')
+        .select('data')
+        .eq('id', cfg.workspaceId)
+        .maybeSingle();
+      if (error) throw error;
+      if (data && data.data) {
+        if (!this.applyRemoteData(data.data)) throw new Error('云端数据格式无效');
+        if (showStatus && statusEl) statusEl.textContent = '✓ 已成功从 Supabase 下载';
       } else {
-        statusEl.textContent = '&#10007; 下载失败: HTTP ' + resp.status;
+        await this.syncToCloud(false);
+        if (showStatus && statusEl) statusEl.textContent = '✓ 已创建新的 Supabase 工作区';
       }
+      return true;
     } catch(e) {
-      statusEl.textContent = '&#10007; 下载失败: ' + e.message;
+      if (showStatus && statusEl) statusEl.textContent = '✗ 下载失败: ' + e.message;
+      return false;
     }
   },
 
