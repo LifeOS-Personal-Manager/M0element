@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>六维人生系统</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;
+  --card:rgba(255,255,255,0.04);
+  --card-hover:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.08);
+  --text:#e0e6f0;
+  --text-dim:#8892a6;
+  --accent:#00f0ff;
+  --accent2:#7b68ee;
+  --accent3:#ff6ec7;
+  --green:#4ade80;
+  --yellow:#facc15;
+  --orange:#fb923c;
+  --red:#f87171;
+  --radius:12px;
+  --shadow:0 4px 24px rgba(0,0,0,0.3);
+  --font:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+
+/* ─── Header ─── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;background:rgba(10,14,23,0.95);
+  border-bottom:1px solid var(--border);position:relative;z-index:10;
+  height:64px;backdrop-filter:blur(12px);
+}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-logo{font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
+.header-date{font-size:13px;color:var(--text-dim)}
+.header-actions{display:flex;gap:8px;align-items:center}
+.btn{
+  padding:7px 16px;border:1px solid var(--border);border-radius:8px;
+  background:var(--card);color:var(--text);cursor:pointer;
+  font-size:13px;transition:all .2s;font-family:var(--font);
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.btn:hover{background:var(--card-hover);border-color:rgba(255,255,255,0.2)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-icon{padding:6px 10px;font-size:14px}
+.btn-danger{color:var(--red);border-color:rgba(248,113,113,0.3)}
+.btn-danger:hover{background:rgba(248,113,113,0.1);border-color:var(--red)}
+
+/* ─── Layout ─── */
+.main-container{display:flex;height:calc(100vh - 64px)}
+
+/* ─── Sidebar ─── */
+.sidebar{
+  width:220px;min-width:220px;background:rgba(255,255,255,0.02);
+  border-right:1px solid var(--border);padding:12px 0;overflow-y:auto;
+}
+.sidebar-section{padding:8px 16px;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:8px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 20px;
+  cursor:pointer;color:var(--text-dim);font-size:14px;transition:all .2s;
+  border-left:3px solid transparent;text-decoration:none;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.nav-item.active{color:var(--accent);background:rgba(0,240,255,0.06);border-left-color:var(--accent)}
+.nav-item .nav-icon{font-size:18px;width:24px;text-align:center}
+.nav-item .nav-badge{
+  margin-left:auto;font-size:11px;padding:1px 8px;border-radius:10px;
+  background:rgba(255,255,255,0.06);color:var(--text-dim);
+}
+.nav-item.active .nav-badge{background:rgba(0,240,255,0.15);color:var(--accent)}
+
+/* ─── Content ─── */
+.content{flex:1;overflow-y:auto;padding:24px 28px}
+.page{display:none}
+.page.active{display:block}
+
+/* ─── Cards ─── */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:20px;backdrop-filter:blur(8px);
+  transition:all .2s;
+}
+.card:hover{border-color:rgba(255,255,255,0.12)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title .badge{
+  font-size:11px;padding:2px 10px;border-radius:10px;font-weight:400;
+  background:rgba(0,240,255,0.1);color:var(--accent);margin-left:auto;
+}
+
+/* ─── Dashboard Grid ─── */
+.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.dashboard-grid .card:first-child{grid-column:1/2;grid-row:1/3}
+.dashboard-grid .card:nth-child(2){grid-column:2/3;grid-row:1/2}
+.dashboard-grid .card:nth-child(3){grid-column:2/3;grid-row:2/3}
+.dashboard-grid .card:nth-child(4){grid-column:1/3}
+.dashboard-grid .card:nth-child(5){grid-column:1/3}
+
+/* ─── Radar Chart ─── */
+.chart-container{position:relative;width:100%;max-width:420px;margin:0 auto;height:320px}
+
+/* ─── Health Index ─── */
+.health-index{text-align:center;padding:8px 0}
+.health-score{font-size:48px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+.health-label{font-size:16px;color:var(--text-dim);margin:4px 0 12px}
+.health-bar-wrap{background:rgba(255,255,255,0.06);border-radius:10px;height:10px;overflow:hidden;margin:12px 0}
+.health-bar{height:100%;border-radius:10px;transition:width .8s ease;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.health-rating{font-size:14px;font-weight:600;margin-top:8px}
+.health-rating.excellent{color:var(--green)}
+.health-rating.good{color:var(--yellow)}
+.health-rating.fair{color:var(--orange)}
+.health-rating.poor{color:var(--red)}
+.health-weights{margin-top:12px;font-size:12px;color:var(--text-dim)}
+.health-weights label{display:inline-flex;align-items:center;gap:4px;margin:0 6px}
+
+/* ─── Quick Cards ─── */
+.quick-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.quick-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;cursor:pointer;transition:all .2s;text-align:center;
+}
+.quick-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.quick-card .qc-icon{font-size:28px;margin-bottom:6px}
+.quick-card .qc-name{font-size:13px;font-weight:600;margin-bottom:4px}
+.quick-card .qc-score{font-size:22px;font-weight:700}
+.quick-card .qc-summary{font-size:11px;color:var(--text-dim);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ─── Timeline ─── */
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:8px;top:4px;bottom:4px;width:1px;background:var(--border)}
+.timeline-item{position:relative;padding:8px 0 8px 16px;cursor:pointer;transition:all .2s}
+.timeline-item::before{content:'';position:absolute;left:-17px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.timeline-item:hover{background:rgba(255,255,255,0.02);border-radius:6px}
+.timeline-item .tl-dim{font-size:11px;font-weight:600;color:var(--accent2)}
+.timeline-item .tl-action{font-size:13px;margin:2px 0}
+.timeline-item .tl-time{font-size:11px;color:var(--text-dim)}
+.timeline-item .tl-detail{font-size:12px;color:var(--text-dim);margin-top:4px;padding:8px;background:rgba(255,255,255,0.03);border-radius:6px;display:none}
+.timeline-item .tl-detail.show{display:block}
+.timeline-empty{text-align:center;padding:32px;color:var(--text-dim);font-size:14px}
+
+/* ─── Quick Actions ─── */
+.quick-actions{display:flex;gap:12px;flex-wrap:wrap}
+.quick-actions .btn{flex:1;min-width:140px;justify-content:center;padding:12px 20px;font-size:14px}
+
+/* ─── Detail Page ─── */
+.detail-header{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.detail-header-left{display:flex;align-items:center;gap:16px}
+.detail-icon{font-size:36px;width:48px;text-align:center}
+.detail-name{font-size:22px;font-weight:700}
+.detail-score-wrap{display:flex;align-items:center;gap:12px}
+.detail-score{font-size:32px;font-weight:700}
+.detail-slider{width:180px;height:4px;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;outline:none;cursor:pointer}
+.detail-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);cursor:pointer;box-shadow:0 0 12px rgba(0,240,255,0.4)}
+.detail-info{font-size:12px;color:var(--text-dim);margin-top:4px}
+
+/* ─── Architecture ─── */
+.arch-item{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);transition:all .2s;cursor:pointer;
+}
+.arch-item:last-child{border-bottom:none}
+.arch-item:hover{background:rgba(255,255,255,0.02)}
+.arch-item .arch-status{font-size:16px;width:24px;text-align:center}
+.arch-item .arch-name{font-size:14px;font-weight:500;flex:1}
+.arch-item .arch-note{font-size:12px;color:var(--text-dim);margin-left:12px}
+.arch-item .arch-actions{display:flex;gap:6px}
+.status-tag{font-size:11px;padding:2px 10px;border-radius:10px;white-space:nowrap}
+.status-established{background:rgba(74,222,128,0.15);color:var(--green)}
+.status-pending{background:rgba(250,204,21,0.15);color:var(--yellow)}
+.status-none{background:rgba(248,113,113,0.15);color:var(--red)}
+.arch-add{padding:14px 16px;text-align:center}
+.arch-add .btn{width:100%;justify-content:center;border-style:dashed}
+
+/* ─── Section ─── */
+.section{margin-bottom:24px}
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.section-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.section-actions{display:flex;gap:8px;align-items:center}
+
+/* ─── Table ─── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:10px 12px;text-align:left;font-weight:600;color:var(--text-dim);font-size:12px;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04)}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.star{color:var(--yellow);font-size:14px}
+.star-empty{color:rgba(255,255,255,0.15)}
+.log-actions{display:flex;gap:4px}
+.log-actions .btn{padding:4px 8px;font-size:11px}
+.log-empty{text-align:center;padding:32px;color:var(--text-dim)}
+.filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-row input{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--text);font-size:12px;font-family:var(--font);outline:none}
+.filter-row input:focus{border-color:var(--accent)}
+.filter-row input[type=date]{width:140px}
+
+/* ─── Trend Chart ─── */
+.trend-container{height:220px;position:relative}
+
+/* ─── Correlation ─── */
+.correlation-item{
+  padding:10px 16px;border-radius:8px;background:rgba(255,255,255,0.03);
+  margin-bottom:8px;font-size:13px;display:flex;align-items:center;gap:12px;
+}
+.correlation-item .corr-icon{font-size:16px}
+.correlation-item .corr-text{flex:1}
+.correlation-item .corr-arrow{font-size:18px}
+.correlation-positive{color:var(--green)}
+.correlation-negative{color:var(--red)}
+.correlation-weak{color:var(--text-dim)}
+.correlation-empty{text-align:center;padding:24px;color:var(--text-dim)}
+
+/* ─── Resource ─── */
+.resource-ov-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;transition:all .2s}
+.resource-ov-item:hover{transform:translateY(-2px);border-color:var(--accent)}
+.resource-ov-item .ro-icon{font-size:24px;margin-bottom:4px}
+.resource-ov-item .ro-name{font-size:12px;font-weight:600;margin-bottom:2px}
+.resource-ov-item .ro-pct{font-size:20px;font-weight:700;color:var(--accent)}
+.resource-ov-item .ro-status{font-size:10px;color:var(--text-dim);margin-top:2px}
+.res-table{width:100%;font-size:13px;border-collapse:collapse}
+.res-table th{padding:8px 10px;text-align:left;font-weight:600;color:var(--text-dim);font-size:11px;border-bottom:1px solid var(--border)}
+.res-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle}
+.res-table tr:hover td{background:rgba(255,255,255,0.02)}
+.res-table .res-actions{display:flex;gap:4px}
+.res-table .res-actions .btn{padding:3px 7px;font-size:10px}
+.res-empty{text-align:center;padding:24px;color:var(--text-dim);font-size:13px}
+.loop-badge-closed{background:rgba(74,222,128,0.15);color:var(--green)}
+.loop-badge-cycling{background:rgba(250,204,21,0.15);color:var(--yellow)}
+.loop-badge-idle{background:rgba(248,113,113,0.15);color:var(--red)}
+
+/* ─── Modal ─── */
+.modal-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:#141a26;border:1px solid var(--border);border-radius:16px;
+  padding:28px;width:90%;max-width:520px;max-height:80vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,0.5);
+}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.modal-close{float:right;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:20px;padding:0 4px}
+.modal-close:hover{color:var(--text)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:6px;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;
+  font-family:var(--font);outline:none;transition:all .2s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-group select{appearance:none;cursor:pointer}
+.form-group .star-select{display:flex;gap:6px}
+.form-group .star-select span{font-size:24px;cursor:pointer;color:rgba(255,255,255,0.15);transition:all .2s}
+.form-group .star-select span.active{color:var(--yellow)}
+.form-group .star-select span:hover{color:var(--yellow)}
+.form-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:20px}
+
+/* ─── Responsive ─── */
+@media(max-width:768px){
+  .sidebar{width:60px;min-width:60px;overflow:hidden}
+  .sidebar .nav-item .nav-label{display:none}
+  .sidebar .nav-item{justify-content:center;padding:12px 8px;border-left:none;border-bottom:2px solid transparent}
+  .sidebar .nav-item.active{border-left-color:transparent;border-bottom-color:var(--accent)}
+  .sidebar .sidebar-section{text-align:center;font-size:9px;padding:6px 4px}
+  .sidebar .nav-item .nav-badge{display:none}
+  .content{padding:16px}
+  .dashboard-grid{grid-template-columns:1fr}
+  .dashboard-grid .card:first-child{grid-column:1;grid-row:auto}
+  .dashboard-grid .card:nth-child(2){grid-column:1;grid-row:auto}
+  .dashboard-grid .card:nth-child(3){grid-column:1;grid-row:auto}
+  .quick-cards{grid-template-columns:repeat(3,1fr)}
+  .header{padding:12px 16px;flex-wrap:wrap;height:auto;gap:8px}
+  .header-actions{flex-wrap:wrap}
+  .btn{font-size:12px;padding:5px 10px}
+  .detail-header{flex-direction:column;align-items:flex-start}
+  .modal{width:95%;padding:20px;max-height:90vh}
+}
+@media(max-width:480px){
+  .quick-cards{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">&#9670; 六维人生系统</div>
+      <span class="header-date" id="headerDate"></span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm" onclick="App.openSettings()">&#9881; 设置</button>
+      <button class="btn btn-sm" onclick="App.exportData()">&#8593; 导出</button>
+      <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">&#8595; 导入</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="App.importData(event)">
+      <button class="btn btn-primary btn-sm" onclick="App.openCheckin()">&#10003; 今日打卡</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-section">导航</div>
+      <div class="nav-item active" data-page="dashboard" onclick="App.navigate('dashboard')">
+        <span class="nav-icon">&#9632;</span>
+        <span class="nav-label">总面板</span>
+      </div>
+      <div class="sidebar-section">维度</div>
+      <div class="nav-item" data-dimension="spacetime" onclick="App.navigate('detail','spacetime')">
+        <span class="nav-icon">&#9203;</span>
+        <span class="nav-label">时空能量</span>
+        <span class="nav-badge" id="badge-spacetime">0</span>
+      </div>
+      <div class="nav-item" data-dimension="material" onclick="App.navigate('detail','material')">
+        <span class="nav-icon">&#128176;</span>
+        <span class="nav-label">物质</span>
+        <span class="nav-badge" id="badge-material">0</span>
+      </div>
+      <div class="nav-item" data-dimension="relation" onclick="App.navigate('detail','relation')">
+        <span class="nav-icon">&#129309;</span>
+        <span class="nav-label">关系</span>
+        <span class="nav-badge" id="badge-relation">0</span>
+      </div>
+      <div class="nav-item" data-dimension="information" onclick="App.navigate('detail','information')">
+        <span class="nav-icon">&#128218;</span>
+        <span class="nav-label">信息</span>
+        <span class="nav-badge" id="badge-information">0</span>
+      </div>
+      <div class="nav-item" data-dimension="meaning" onclick="App.navigate('detail','meaning')">
+        <span class="nav-icon">&#127919;</span>
+        <span class="nav-label">意义</span>
+        <span class="nav-badge" id="badge-meaning">0</span>
+      </div>
+      <div class="nav-item" data-dimension="personal" onclick="App.navigate('detail','personal')">
+        <span class="nav-icon">&#128100;</span>
+        <span class="nav-label">个人</span>
+        <span class="nav-badge" id="badge-personal">0</span>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="content" id="content">
+      <!-- Dashboard Page -->
+      <div class="page active" id="page-dashboard">
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-title">&#9670; 六维雷达图 <span class="badge">全局概览</span></div>
+            <div class="chart-container"><canvas id="radarChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">&#9829; 综合健康指数 <span class="badge" id="healthBadge">--</span></div>
+            <div class="health-index" id="healthIndex">
+              <div class="health-score" id="healthScore">--</div>
+              <div class="health-label">综合健康指数</div>
+              <div class="health-bar-wrap"><div class="health-bar" id="healthBar" style="width:0%"></div></div>
+              <div class="health-rating" id="healthRating">--</div>
+              <div class="health-weights" id="healthWeights"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">&#9889; 快捷操作</div>
+            <div class="quick-actions">
+              <button class="btn btn-primary" onclick="App.openCheckin()">&#10003; 今日打卡</button>
+              <button class="btn" onclick="App.generateWeeklyReport()">&#128196; 周报生成</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">&#128198; 最近动态</div>
+            <div class="timeline" id="timeline"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">&#9635; 各维度概览</div>
+            <div class="quick-cards" id="quickCards"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Page -->
+      <div class="page" id="page-detail">
+        <div class="section">
+          <div class="detail-header" id="detailHeader"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">&#128196; 静态架构清单</div>
+            <div class="section-actions">
+              <button class="btn btn-sm" onclick="App.addArchitectureItem()">+ 添加子项</button>
+            </div>
+          </div>
+          <div class="card" id="architectureList"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">&#128203; 动态管理记录</div>
+            <div class="section-actions">
+              <div class="filter-row">
+                <input type="date" id="logFilterFrom" onchange="App.renderDetail()">
+                <span style="color:var(--text-dim)">~</span>
+                <input type="date" id="logFilterTo" onchange="App.renderDetail()">
+                <button class="btn btn-sm btn-primary" onclick="App.openLogModal()">+ 新增</button>
+              </div>
+            </div>
+          </div>
+          <div class="card" id="logTable"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">&#128200; 历史趋势 (30天)</div>
+          </div>
+          <div class="card">
+            <div class="trend-container"><canvas id="trendChart"></canvas></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">&#128200; 关联分析</div>
+          </div>
+          <div class="card" id="correlationList"></div>
+        </div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">&#128260; 资源闭环 <span class="badge" id="loopStatusBadge">--</span></div>
+            <div class="section-actions">
+              <span id="loopStatusIndicator" style="font-size:12px;padding:3px 12px;border-radius:10px;background:rgba(255,255,255,0.06)">--</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="font-size:14px;margin-bottom:10px">&#128203; 静态资源 <span class="badge">拥有什么</span></div>
+            <div id="resourceStaticList"></div>
+            <div style="padding:10px 0 0;text-align:center"><button class="btn btn-sm" onclick="App.openResourceStaticModal()">+ 添加资源</button></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="font-size:14px;margin-bottom:10px">&#128200; 动态使用 <span class="badge">用了什么</span></div>
+            <div id="resourceDynamicList"></div>
+            <div style="padding:10px 0 0;text-align:center"><button class="btn btn-sm" onclick="App.openResourceDynamicModal()">+ 添加使用记录</button></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal: Settings -->
+<div class="modal-overlay" id="modalSettings">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalSettings')">&times;</button>
+    <div class="modal-title">&#9881; 设置</div>
+    <div class="form-group">
+      <label>云端同步 URL (JSONBin.io 等)</label>
+      <input type="text" id="syncUrl" placeholder="https://api.jsonbin.io/v3/b/YOUR_BIN_ID">
+    </div>
+    <div class="form-group">
+      <label>Secret Key (可选)</label>
+      <input type="password" id="syncKey" placeholder="X-Master-Key">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.closeModal('modalSettings')">取消</button>
+      <button class="btn btn-primary" onclick="App.saveSettings()">保存</button>
+      <button class="btn" onclick="App.syncToCloud()">&#8593; 上传云端</button>
+      <button class="btn" onclick="App.syncFromCloud()">&#8595; 下载云端</button>
+    </div>
+    <div id="syncStatus" style="margin-top:12px;font-size:13px;color:var(--text-dim);text-align:center"></div>
+  </div>
+</div>
+
+<!-- Modal: Checkin -->
+<div class="modal-overlay" id="modalCheckin">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalCheckin')">&times;</button>
+    <div class="modal-title">&#10003; 今日打卡</div>
+    <div id="checkinForm">
+      <div class="form-group"><label>时空能量</label><input type="range" id="ci-spacetime" min="1" max="10" value="7" oninput="document.getElementById('civ-spacetime').textContent=this.value"><span style="float:right;color:var(--accent);font-weight:700" id="civ-spacetime">7</span></div>
+      <div class="form-group"><label>物质</label><input type="range" min="1" max="10" value="6" id="ci-material" oninput="document.getElementById('civ-material').textContent=this.value"><span style="float:right;color:var(--accent);font-weight:700" id="civ-material">6</span></div>
+      <div class="form-group"><label>关系</label><input type="range" min="1" max="10" value="8" id="ci-relation" oninput="document.getElementById('civ-relation').textContent=this.value"><span style="float:right;color:var(--accent);font-weight:700" id="civ-relation">8</span></div>
+      <div class="form-group"><label>信息</label><input type="range" min="1" max="10" value="5" id="ci-information" oninput="document.getElementById('civ-information').textContent=this.value"><span style="float:right;color:var(--accent);font-weight:700" id="civ-information">5</span></div>
+      <div class="form-group"><label>意义</label><input type="range" min="1" max="10" value="7" id="ci-meaning" oninput="document.getElementById('civ-meaning').textContent=this.value"><span style="float:right;color:var(--accent);font-weight:700" id="civ-meaning">7</span></div>
+      <div class="form-group"><label>个人</label><input type="range" min="1" max="10" value="7" id="ci-personal" oninput="document.getElementById('civ-personal').textContent=this.value"><span style="float:right;color:var(--accent);font-weight:700" id="civ-personal">7</span></div>
+      <div class="form-group"><label>备注（可选）</label><textarea id="ci-note" placeholder="今天的感受..."></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.closeModal('modalCheckin')">取消</button>
+      <button class="btn btn-primary" onclick="App.submitCheckin()">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Log -->
+<div class="modal-overlay" id="modalLog">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalLog')">&times;</button>
+    <div class="modal-title" id="logModalTitle">&#128203; 新增记录</div>
+    <input type="hidden" id="logEditId" value="">
+    <div class="form-group">
+      <label>维度</label>
+      <select id="logDimension">
+        <option value="spacetime">时空能量</option>
+        <option value="material">物质</option>
+        <option value="relation">关系</option>
+        <option value="information">信息</option>
+        <option value="meaning">意义</option>
+        <option value="personal">个人</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="logDate">
+    </div>
+    <div class="form-group">
+      <label>动作描述</label>
+      <textarea id="logAction" placeholder="做了什么..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>效果评分</label>
+      <div class="star-select" id="logEffect">
+        <span data-v="1" onclick="App.selectStar(1)">&#9733;</span>
+        <span data-v="2" onclick="App.selectStar(2)">&#9733;</span>
+        <span data-v="3" onclick="App.selectStar(3)">&#9733;</span>
+        <span data-v="4" onclick="App.selectStar(4)">&#9733;</span>
+        <span data-v="5" onclick="App.selectStar(5)">&#9733;</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>备注</label>
+      <textarea id="logNote" placeholder="备注..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.closeModal('modalLog')">取消</button>
+      <button class="btn btn-primary" onclick="App.saveLog()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Architecture Edit -->
+<div class="modal-overlay" id="modalArch">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalArch')">&times;</button>
+    <div class="modal-title" id="archModalTitle">&#128196; 编辑子项</div>
+    <input type="hidden" id="archEditId" value="">
+    <div class="form-group">
+      <label>名称</label>
+      <input type="text" id="archName" placeholder="子项名称">
+    </div>
+    <div class="form-group">
+      <label>状态</label>
+      <select id="archStatus">
+        <option value="established">已建立</option>
+        <option value="pending">待完善</option>
+        <option value="none">未开始</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>备注</label>
+      <textarea id="archNote" placeholder="备注..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.closeModal('modalArch')">取消</button>
+      <button class="btn btn-primary" onclick="App.saveArchitectureItem()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Weekly Report -->
+<div class="modal-overlay" id="modalReport">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalReport')">&times;</button>
+    <div class="modal-title">&#128196; 周报</div>
+    <div id="reportContent" style="font-size:13px;line-height:1.8;white-space:pre-wrap;background:rgba(255,255,255,0.03);padding:16px;border-radius:8px;max-height:400px;overflow-y:auto"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.copyReport()">&#128203; 复制</button>
+      <button class="btn btn-primary" onclick="App.closeModal('modalReport')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Resource Static Edit -->
+<div class="modal-overlay" id="modalResStatic">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalResStatic')">&times;</button>
+    <div class="modal-title" id="resStaticModalTitle">&#128203; 编辑静态资源</div>
+    <input type="hidden" id="resStaticEditId" value="">
+    <div class="form-group">
+      <label>资源名称（我拥有什么）</label>
+      <input type="text" id="resStaticName" placeholder="如：晨间2小时">
+    </div>
+    <div class="form-group">
+      <label>质量评分（当前质量如何）</label>
+      <div class="star-select" id="resStaticQuality">
+        <span data-v="1" onclick="App.selectResStaticQuality(1)">&#9733;</span>
+        <span data-v="2" onclick="App.selectResStaticQuality(2)">&#9733;</span>
+        <span data-v="3" onclick="App.selectResStaticQuality(3)">&#9733;</span>
+        <span data-v="4" onclick="App.selectResStaticQuality(4)">&#9733;</span>
+        <span data-v="5" onclick="App.selectResStaticQuality(5)">&#9733;</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>是否充足</label>
+      <select id="resStaticSufficient">
+        <option value="true">充足</option>
+        <option value="false">不充足</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>组合方式（如何组合）</label>
+      <input type="text" id="resStaticCombination" placeholder="如：搭配精力管理">
+    </div>
+    <div class="form-group">
+      <label>缺失资源（缺什么）</label>
+      <input type="text" id="resStaticMissing" placeholder="如：深度工作时间">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.closeModal('modalResStatic')">取消</button>
+      <button class="btn btn-primary" onclick="App.saveResourceStatic()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Resource Dynamic Edit -->
+<div class="modal-overlay" id="modalResDynamic">
+  <div class="modal">
+    <button class="modal-close" onclick="App.closeModal('modalResDynamic')">&times;</button>
+    <div class="modal-title" id="resDynamicModalTitle">&#128200; 编辑使用记录</div>
+    <input type="hidden" id="resDynamicEditId" value="">
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="resDynamicDate">
+    </div>
+    <div class="form-group">
+      <label>使用资源（我用了什么资源）</label>
+      <input type="text" id="resDynamicResource" placeholder="如：晨间2小时">
+    </div>
+    <div class="form-group">
+      <label>使用事项（用在什么事情上）</label>
+      <input type="text" id="resDynamicActivity" placeholder="如：阅读《认知觉醒》">
+    </div>
+    <div class="form-group">
+      <label>效率评分（使用效率如何）</label>
+      <div class="star-select" id="resDynamicEfficiency">
+        <span data-v="1" onclick="App.selectResDynamicEfficiency(1)">&#9733;</span>
+        <span data-v="2" onclick="App.selectResDynamicEfficiency(2)">&#9733;</span>
+        <span data-v="3" onclick="App.selectResDynamicEfficiency(3)">&#9733;</span>
+        <span data-v="4" onclick="App.selectResDynamicEfficiency(4)">&#9733;</span>
+        <span data-v="5" onclick="App.selectResDynamicEfficiency(5)">&#9733;</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>产生结果（产生了什么结果）</label>
+      <input type="text" id="resDynamicResult" placeholder="如：完成50页+笔记">
+    </div>
+    <div class="form-group">
+      <label>新积累（是否形成新积累）</label>
+      <input type="text" id="resDynamicAccumulation" placeholder="如：读书笔记库">
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="App.closeModal('modalResDynamic')">取消</button>
+      <button class="btn btn-primary" onclick="App.saveResourceDynamic()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DIMENSIONS = {
+  spacetime: { name: '时空能量', icon: '&#9203;' },
+  material: { name: '物质', icon: '&#128176;' },
+  relation: { name: '关系', icon: '&#129309;' },
+  information: { name: '信息', icon: '&#128218;' },
+  meaning: { name: '意义', icon: '&#127919;' },
+  personal: { name: '个人', icon: '&#128100;' }
+};
+
+const DIM_KEYS = Object.keys(DIMENSIONS);
+
+const DEFAULT_ARCHITECTURE = {
+  spacetime: [
+    { id: 'st1', name: '时间管理', status: 'pending', note: '' },
+    { id: 'st2', name: '精力管理', status: 'pending', note: '' },
+    { id: 'st3', name: '作息规律', status: 'none', note: '' },
+    { id: 'st4', name: '效率优化', status: 'none', note: '' }
+  ],
+  material: [
+    { id: 'mt1', name: '金钱', status: 'pending', note: '' },
+    { id: 'mt2', name: '物品', status: 'pending', note: '' },
+    { id: 'mt3', name: '健康', status: 'established', note: '保持运动习惯' },
+    { id: 'mt4', name: '环境', status: 'none', note: '' }
+  ],
+  relation: [
+    { id: 'rl1', name: '家人', status: 'established', note: '' },
+    { id: 'rl2', name: '朋友', status: 'pending', note: '' },
+    { id: 'rl3', name: '伴侣', status: 'none', note: '' },
+    { id: 'rl4', name: '社交网络', status: 'pending', note: '' }
+  ],
+  information: [
+    { id: 'if1', name: '知识体系', status: 'pending', note: '' },
+    { id: 'if2', name: '技能培养', status: 'pending', note: '' },
+    { id: 'if3', name: '资讯管理', status: 'none', note: '' },
+    { id: 'if4', name: '创作输出', status: 'none', note: '' }
+  ],
+  meaning: [
+    { id: 'mn1', name: '价值观', status: 'established', note: '清晰' },
+    { id: 'mn2', name: '人生目标', status: 'pending', note: '' },
+    { id: 'mn3', name: '个人成长', status: 'pending', note: '' },
+    { id: 'mn4', name: '社会贡献', status: 'none', note: '' }
+  ],
+  personal: [
+    { id: 'ps1', name: '素养能力', status: 'established', note: '沟通表达良好' },
+    { id: 'ps2', name: '知识技能', status: 'pending', note: '' },
+    { id: 'ps3', name: '项目经验', status: 'pending', note: '' },
+    { id: 'ps4', name: '其他', status: 'none', note: '' }
+  ]
+};
+
+const DEFAULT_RESOURCES = {
+  spacetime: { static: [], dynamic: [] },
+  material: { static: [], dynamic: [] },
+  relation: { static: [], dynamic: [] },
+  information: { static: [], dynamic: [] },
+  meaning: { static: [], dynamic: [] },
+  personal: { static: [], dynamic: [] }
+};
+
+const DEFAULT_DATA = {
+  scores: { spacetime: 7, material: 6, relation: 8, information: 5, meaning: 7, personal: 7 },
+  weights: { spacetime: 1, material: 1, relation: 1, information: 1, meaning: 1, personal: 1 },
+  architectures: JSON.parse(JSON.stringify(DEFAULT_ARCHITECTURE)),
+  logs: [],
+  history: {
+    spacetime: [], material: [], relation: [], information: [], meaning: [], personal: []
+  },
+  syncConfig: { url: '', secretKey: '' },
+  resources: JSON.parse(JSON.stringify(DEFAULT_RESOURCES))
+};
+
+const App = {
+  data: null,
+  radarChart: null,
+  trendChart: null,
+  currentPage: 'dashboard',
+  currentDimension: 'material',
+  selectedStar: 0,
+  nextLogId: 1,
+  nextArchId: 1000,
+  nextResStaticId: 2000,
+  nextResDynamicId: 3000,
+  resStaticQuality: 0,
+  resDynamicEfficiency: 0,
+
+  // ─── Init ───
+  init() {
+    this.loadData();
+    this.setDate();
+    this.navigate('dashboard');
+    this.updateBadges();
+  },
+
+  setDate() {
+    const d = new Date();
+    document.getElementById('headerDate').textContent =
+      d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
+    const today = d.toISOString().split('T')[0];
+    document.getElementById('logDate').value = today;
+    if (!document.getElementById('logFilterFrom').value) {
+      const from = new Date(d); from.setDate(from.getDate()-30);
+      document.getElementById('logFilterFrom').value = from.toISOString().split('T')[0];
+    }
+    if (!document.getElementById('logFilterTo').value) {
+      document.getElementById('logFilterTo').value = today;
+    }
+  },
+
+  loadData() {
+    const raw = localStorage.getItem('five-dim-life');
+    if (raw) {
+      try {
+        this.data = JSON.parse(raw);
+        // ensure defaults
+        DIM_KEYS.forEach(k => {
+          if (!this.data.scores[k]) this.data.scores[k] = 7;
+          if (!this.data.weights[k]) this.data.weights[k] = 1;
+          if (!this.data.architectures[k]) this.data.architectures[k] = [...DEFAULT_ARCHITECTURE[k]];
+          if (!this.data.history[k]) this.data.history[k] = [];
+        });
+        if (!this.data.logs) this.data.logs = [];
+        if (!this.data.syncConfig) this.data.syncConfig = { url: '', secretKey: '' };
+        if (!this.data.resources) {
+          this.data.resources = JSON.parse(JSON.stringify(DEFAULT_RESOURCES));
+        } else {
+          DIM_KEYS.forEach(k => {
+            if (!this.data.resources[k]) this.data.resources[k] = { static: [], dynamic: [] };
+            if (!this.data.resources[k].static) this.data.resources[k].static = [];
+            if (!this.data.resources[k].dynamic) this.data.resources[k].dynamic = [];
+          });
+        }
+      } catch(e) {
+        this.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+    } else {
+      this.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      // seed sample data
+      this.seedSampleData();
+      this.saveData();
+    }
+    // compute next ids
+    this.nextLogId = this.data.logs.reduce((m, l) => Math.max(m, parseInt(l.id)||0), 0) + 1;
+    DIM_KEYS.forEach(k => {
+      (this.data.architectures[k]||[]).forEach(a => {
+        this.nextArchId = Math.max(this.nextArchId, parseInt(a.id)||0);
+      });
+    });
+    this.nextArchId++;
+  },
+
+  seedSampleData() {
+    const logs = [];
+    const now = new Date();
+    const actions = [
+      '完成了晨间冥想', '整理了工作空间', '给家人打了电话', '阅读了30分钟',
+      '制定了周计划', '运动了45分钟', '学习了新技能', '完成了项目汇报',
+      '和朋友聚餐', '写了日记反思', '优化了作息时间', '整理了财务账单',
+      '清理了手机相册', '完成了读书笔记', '参加了行业分享会'
+    ];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i * 2 - Math.floor(Math.random() * 3));
+      const dim = DIM_KEYS[Math.floor(Math.random() * DIM_KEYS.length)];
+      logs.push({
+        id: i + 1,
+        dimension: dim,
+        date: d.toISOString().split('T')[0],
+        action: actions[Math.floor(Math.random() * actions.length)],
+        effect: Math.floor(Math.random() * 3) + 3,
+        note: ''
+      });
+    }
+    this.data.logs = logs;
+
+    // seed resources
+    const resourceNames = {
+      spacetime: ['晨间2小时', '晚间自由时间', '周末整块时间', '通勤碎片时间'],
+      material: ['月收入', '储蓄', '居住空间', '健康状态'],
+      relation: ['家人关系', '朋友网络', '导师资源', '社交圈'],
+      information: ['阅读渠道', '学习平台', '知识笔记', '行业资讯'],
+      meaning: ['人生愿景', '核心信念', '成长复盘', '公益参与'],
+      personal: ['沟通表达', '专业技能', '项目经验', '综合素养']
+    };
+    DIM_KEYS.forEach(k => {
+      const names = resourceNames[k] || ['资源A', '资源B', '资源C', '资源D'];
+      names.forEach((name, i) => {
+        this.data.resources[k].static.push({
+          id: 'rs' + (i + 1) + k,
+          name: name,
+          quality: Math.floor(Math.random() * 3) + 3,
+          sufficient: Math.random() > 0.4,
+          combination: '',
+          missing: ''
+        });
+        this.data.resources[k].dynamic.push({
+          id: 'rd' + (i + 1) + k,
+          date: new Date(Date.now() - i * 3 * 86400000).toISOString().split('T')[0],
+          resourceUsed: name,
+          activity: ['项目推进', '自我提升', '社交维护', '知识整理', '反思规划'][i % 5],
+          efficiency: Math.floor(Math.random() * 3) + 3,
+          result: '产出正常',
+          newAccumulation: ''
+        });
+      });
+    });
+
+    // seed history
+    DIM_KEYS.forEach(k => {
+      const hist = [];
+      let base = this.data.scores[k];
+      for (let i = 30; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const score = Math.max(1, Math.min(10, base + (Math.random() - 0.5) * 2));
+        base = score;
+        hist.push({ date: d.toISOString().split('T')[0], score: Math.round(score * 10) / 10 });
+      }
+      this.data.history[k] = hist;
+    });
+  },
+
+  saveData() {
+    localStorage.setItem('five-dim-life', JSON.stringify(this.data));
+    this.updateBadges();
+  },
+
+  updateBadges() {
+    DIM_KEYS.forEach(k => {
+      const b = document.getElementById('badge-' + k);
+      if (b) b.textContent = this.data.scores[k] || 0;
+    });
+  },
+
+  // ─── Navigation ───
+  navigate(page, dimension) {
+    this.currentPage = page;
+    if (dimension) this.currentDimension = dimension;
+
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    if (page === 'dashboard') {
+      document.getElementById('page-dashboard').classList.add('active');
+      document.querySelector('.nav-item[data-page="dashboard"]').classList.add('active');
+      this.renderDashboard();
+    } else {
+      document.getElementById('page-detail').classList.add('active');
+      document.querySelector('.nav-item[data-dimension="' + dimension + '"]').classList.add('active');
+      this.renderDetail();
+    }
+  },
+
+  // ─── Dashboard ───
+  renderDashboard() {
+    this.renderRadarChart();
+    this.renderHealthIndex();
+    this.renderQuickCards();
+    this.renderTimeline();
+  },
+
+  renderRadarChart() {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    if (this.radarChart) { this.radarChart.destroy(); }
+
+    const scores = DIM_KEYS.map(k => this.data.scores[k]);
+    const labels = DIM_KEYS.map(k => DIMENSIONS[k].name);
+
+    this.radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: scores,
+          backgroundColor: 'rgba(0,240,255,0.12)',
+          borderColor: 'rgba(0,240,255,0.8)',
+          borderWidth: 2,
+          pointBackgroundColor: DIM_KEYS.map((_,i) => ['#00f0ff','#7b68ee','#ff6ec7','#4ade80','#facc15','#ff9500'][i]),
+          pointBorderColor: '#0a0e17',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 10,
+            ticks: { stepSize: 2, color: 'rgba(255,255,255,0.4)', backdropColor: 'transparent', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            angleLines: { color: 'rgba(255,255,255,0.06)' },
+            pointLabels: { color: '#e0e6f0', font: { size: 12, weight: '600' } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ctx.label + ': ' + ctx.raw + '分'; }
+            }
+          }
+        }
+      }
+    });
+  },
+
+  renderHealthIndex() {
+    const scores = this.data.scores;
+    const weights = this.data.weights;
+    let total = 0, weightSum = 0;
+    DIM_KEYS.forEach(k => {
+      total += (scores[k] || 0) * (weights[k] || 1);
+      weightSum += (weights[k] || 1);
+    });
+    const avg = weightSum > 0 ? total / weightSum : 0;
+    const pct = Math.round((avg / 10) * 100);
+
+    document.getElementById('healthScore').textContent = avg.toFixed(1);
+    document.getElementById('healthBar').style.width = pct + '%';
+
+    let rating, cls, badge;
+    if (avg >= 8) { rating = '优秀'; cls = 'excellent'; badge = '优秀'; }
+    else if (avg >= 6) { rating = '良好'; cls = 'good'; badge = '良好'; }
+    else if (avg >= 4) { rating = '一般'; cls = 'fair'; badge = '一般'; }
+    else { rating = '需关注'; cls = 'poor'; badge = '需关注'; }
+
+    const ratingEl = document.getElementById('healthRating');
+    ratingEl.textContent = '评级: ' + rating;
+    ratingEl.className = 'health-rating ' + cls;
+    document.getElementById('healthBadge').textContent = badge;
+
+    // weights
+    const wEl = document.getElementById('healthWeights');
+    let wHtml = '权重: ';
+    DIM_KEYS.forEach(k => {
+      wHtml += '<label>' + DIMENSIONS[k].name + ' <input type="number" min="0.1" max="5" step="0.1" value="' + (weights[k]||1) + '" style="width:40px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;text-align:center" onchange="App.updateWeight(\'' + k + '\',this.value)"></label> ';
+    });
+    wEl.innerHTML = wHtml;
+  },
+
+  updateWeight(dim, val) {
+    const v = parseFloat(val);
+    if (v > 0 && v <= 5) {
+      this.data.weights[dim] = v;
+      this.saveData();
+      this.renderHealthIndex();
+    }
+  },
+
+  renderQuickCards() {
+    const el = document.getElementById('quickCards');
+    let html = '';
+    DIM_KEYS.forEach(k => {
+      const dim = DIMENSIONS[k];
+      const score = this.data.scores[k];
+      const logs = this.data.logs.filter(l => l.dimension === k);
+      const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
+      const summary = lastLog ? lastLog.action : '暂无记录';
+      const colors = ['#00f0ff','#7b68ee','#ff6ec7','#4ade80','#facc15','#ff9500'];
+      const color = DIM_KEYS.indexOf(k) < colors.length ? colors[DIM_KEYS.indexOf(k)] : '#00f0ff';
+      html += '<div class="quick-card" onclick="App.navigate(\'detail\',\'' + k + '\')" style="border-top:3px solid ' + color + '">' +
+        '<div class="qc-icon">' + dim.icon + '</div>' +
+        '<div class="qc-name">' + dim.name + '</div>' +
+        '<div class="qc-score" style="color:' + color + '">' + score + '</div>' +
+        '<div class="qc-summary">' + summary + '</div>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+  },
+
+  renderTimeline() {
+    const el = document.getElementById('timeline');
+    const logs = [...this.data.logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+    if (logs.length === 0) {
+      el.innerHTML = '<div class="timeline-empty">暂无动态记录，点击"今日打卡"开始记录</div>';
+      return;
+    }
+    let html = '';
+    logs.forEach(l => {
+      const dim = DIMENSIONS[l.dimension];
+      html += '<div class="timeline-item" onclick="this.querySelector(\'.tl-detail\').classList.toggle(\'show\')">' +
+        '<div class="tl-dim">' + dim.icon + ' ' + dim.name + '</div>' +
+        '<div class="tl-action">' + l.action + '</div>' +
+        '<div class="tl-time">' + l.date + ' &middot; ' + '★'.repeat(l.effect) + '☆'.repeat(5-l.effect) + '</div>' +
+        (l.note ? '<div class="tl-detail">' + l.note + '</div>' : '') +
+        '</div>';
+    });
+    el.innerHTML = html;
+  },
+
+  // ─── Detail ───
+  renderDetail() {
+    const dim = this.currentDimension;
+    const info = DIMENSIONS[dim];
+    const score = this.data.scores[dim];
+
+    // Header
+    const headerEl = document.getElementById('detailHeader');
+    headerEl.innerHTML = '<div class="detail-header-left">' +
+      '<span class="detail-icon">' + info.icon + '</span>' +
+      '<div><div class="detail-name">' + info.name + '</div>' +
+      '<div class="detail-info">最近更新: ' + this.getLastUpdateTime(dim) + '</div></div>' +
+      '</div>' +
+      '<div class="detail-score-wrap">' +
+      '<span class="detail-score" id="detailScore">' + score + '</span>' +
+      '<input type="range" class="detail-slider" min="1" max="10" value="' + score + '" id="detailSlider" oninput="App.updateDetailScore(this.value)">' +
+      '</div>';
+
+    // Architecture
+    this.renderArchitecture();
+
+    // Logs
+    this.renderLogs();
+
+    // Trend
+    this.renderTrendChart();
+
+    // Correlation
+    this.renderCorrelation();
+
+    // Resource Loop
+    this.renderResourceStatic();
+    this.renderResourceDynamic();
+    this.renderLoopStatus();
+  },
+
+  getLastUpdateTime(dim) {
+    const logs = this.data.logs.filter(l => l.dimension === dim).sort((a, b) => b.date.localeCompare(a.date));
+    if (logs.length > 0) return logs[0].date;
+    const hist = this.data.history[dim] || [];
+    if (hist.length > 0) return hist[hist.length - 1].date;
+    return '暂无';
+  },
+
+  updateDetailScore(val) {
+    const v = parseInt(val);
+    this.data.scores[this.currentDimension] = v;
+    this.saveData();
+    document.getElementById('detailScore').textContent = v;
+    // record history
+    const today = new Date().toISOString().split('T')[0];
+    const hist = this.data.history[this.currentDimension];
+    const existing = hist.find(h => h.date === today);
+    if (existing) {
+      existing.score = v;
+    } else {
+      hist.push({ date: today, score: v });
+    }
+    this.saveData();
+    this.renderTrendChart();
+  },
+
+  renderArchitecture() {
+    const el = document.getElementById('architectureList');
+    const items = this.data.architectures[this.currentDimension] || [];
+    if (items.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">暂无架构子项</div>';
+      return;
+    }
+    let html = '';
+    items.forEach(a => {
+      const statusMap = { established: '已建立', pending: '待完善', none: '未开始' };
+      const statusClass = 'status-' + a.status;
+      html += '<div class="arch-item">' +
+        '<span class="arch-status">' + (a.status === 'established' ? '&#10003;' : a.status === 'pending' ? '&#9203;' : '&#10007;') + '</span>' +
+        '<span class="arch-name">' + a.name + '</span>' +
+        '<span class="status-tag ' + statusClass + '">' + statusMap[a.status] + '</span>' +
+        (a.note ? '<span class="arch-note">' + a.note + '</span>' : '') +
+        '<span class="arch-actions">' +
+        '<button class="btn btn-sm" onclick="App.editArchitectureItem(\'' + a.id + '\')">&#9998;</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="App.deleteArchitectureItem(\'' + a.id + '\')">&#10005;</button>' +
+        '</span></div>';
+    });
+    el.innerHTML = html;
+  },
+
+  renderLogs() {
+    const el = document.getElementById('logTable');
+    const dim = this.currentDimension;
+    const from = document.getElementById('logFilterFrom').value;
+    const to = document.getElementById('logFilterTo').value;
+
+    let logs = this.data.logs.filter(l => l.dimension === dim);
+    if (from) logs = logs.filter(l => l.date >= from);
+    if (to) logs = logs.filter(l => l.date <= to);
+    logs.sort((a, b) => b.date.localeCompare(a.date));
+
+    if (logs.length === 0) {
+      el.innerHTML = '<div class="log-empty">暂无管理记录</div>';
+      return;
+    }
+
+    let html = '<div class="table-wrap"><table><thead><tr><th>日期</th><th>动作描述</th><th>效果</th><th>备注</th><th>操作</th></tr></thead><tbody>';
+    const dimNames = DIM_KEYS.reduce((o, k) => { o[k] = DIMENSIONS[k].name; return o; }, {});
+    logs.forEach(l => {
+      html += '<tr>' +
+        '<td>' + l.date + '</td>' +
+        '<td>' + l.action + '</td>' +
+        '<td>' + '★'.repeat(l.effect) + '☆'.repeat(5-l.effect) + '</td>' +
+        '<td style="color:var(--text-dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (l.note || '') + '</td>' +
+        '<td><div class="log-actions">' +
+        '<button class="btn btn-sm" onclick="App.editLog(\'' + l.id + '\')">&#9998;</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="App.deleteLog(\'' + l.id + '\')">&#10005;</button>' +
+        '</div></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  },
+
+  renderTrendChart() {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (this.trendChart) { this.trendChart.destroy(); }
+
+    const dim = this.currentDimension;
+    const hist = this.data.history[dim] || [];
+    const recent = hist.slice(-30);
+
+    const labels = recent.map(h => h.date.slice(5));
+    const scores = recent.map(h => h.score);
+
+    this.trendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: scores,
+          borderColor: '#00f0ff',
+          backgroundColor: 'rgba(0,240,255,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointBackgroundColor: '#00f0ff',
+          pointBorderColor: '#0a0e17',
+          pointBorderWidth: 2,
+          pointHoverRadius: 6,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, maxTicksLimit: 10 },
+            grid: { color: 'rgba(255,255,255,0.04)' }
+          },
+          y: {
+            min: 0, max: 10,
+            ticks: { stepSize: 2, color: 'rgba(255,255,255,0.4)', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.06)' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ctx.parsed.y + '分'; }
+            }
+          }
+        }
+      }
+    });
+  },
+
+  renderCorrelation() {
+    const el = document.getElementById('correlationList');
+    const dim = this.currentDimension;
+
+    const correlations = [];
+    DIM_KEYS.forEach(k => {
+      if (k === dim) return;
+      const r = this.calcCorrelation(dim, k);
+      if (r !== null) {
+        correlations.push({ dim: k, r: r });
+      }
+    });
+
+    correlations.sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
+
+    if (correlations.length === 0) {
+      el.innerHTML = '<div class="correlation-empty">数据不足，暂无法分析关联</div>';
+      return;
+    }
+
+    const dimName = DIMENSIONS[dim].name;
+    let html = '';
+    correlations.forEach(c => {
+      const other = DIMENSIONS[c.dim];
+      const absR = Math.abs(c.r);
+      let desc, cls;
+      if (absR > 0.5) {
+        desc = c.r > 0 ? '正相关（同步变化）' : '负相关（反向变化）';
+        cls = c.r > 0 ? 'correlation-positive' : 'correlation-negative';
+      } else if (absR > 0.2) {
+        desc = '弱相关';
+        cls = 'correlation-weak';
+      } else {
+        desc = '无明显关联';
+        cls = 'correlation-weak';
+      }
+      const arrow = c.r > 0 ? '&#8599;' : '&#8600;';
+      const arrowCls = c.r > 0 ? 'correlation-positive' : 'correlation-negative';
+      html += '<div class="correlation-item">' +
+        '<span class="corr-icon">' + other.icon + '</span>' +
+        '<span class="corr-text">' + dimName + ' 与 ' + other.name + '：<strong class="' + cls + '">' + desc + '</strong> <span style="color:var(--text-dim);font-size:12px">(r=' + c.r.toFixed(2) + ')</span></span>' +
+        '<span class="corr-arrow ' + arrowCls + '">' + arrow + '</span>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+  },
+
+  calcCorrelation(dim1, dim2) {
+    const h1 = this.data.history[dim1] || [];
+    const h2 = this.data.history[dim2] || [];
+    // match by date
+    const map2 = {};
+    h2.forEach(h => { map2[h.date] = h.score; });
+    const pairs = [];
+    h1.forEach(h => {
+      if (map2[h.date] !== undefined) {
+        pairs.push({ x: h.score, y: map2[h.date] });
+      }
+    });
+    if (pairs.length < 5) return null;
+    const n = pairs.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    pairs.forEach(p => {
+      sumX += p.x; sumY += p.y; sumXY += p.x * p.y; sumX2 += p.x * p.x; sumY2 += p.y * p.y;
+    });
+    const num = n * sumXY - sumX * sumY;
+    const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    if (den === 0) return null;
+    return num / den;
+  },
+
+  // ─── Checkin ───
+  openCheckin() {
+    DIM_KEYS.forEach(k => {
+      document.getElementById('ci-' + k).value = this.data.scores[k];
+      document.getElementById('civ-' + k).textContent = this.data.scores[k];
+    });
+    document.getElementById('ci-note').value = '';
+    this.openModal('modalCheckin');
+  },
+
+  submitCheckin() {
+    const today = new Date().toISOString().split('T')[0];
+    const note = document.getElementById('ci-note').value.trim();
+
+    DIM_KEYS.forEach(k => {
+      const val = parseInt(document.getElementById('ci-' + k).value);
+      this.data.scores[k] = val;
+      // record history
+      const hist = this.data.history[k];
+      const existing = hist.find(h => h.date === today);
+      if (existing) {
+        existing.score = val;
+      } else {
+        hist.push({ date: today, score: val });
+      }
+    });
+
+    // add a log entry if note or summary
+    if (note) {
+      this.data.logs.push({
+        id: this.nextLogId++,
+        dimension: 'spacetime',
+        date: today,
+        action: '今日打卡: ' + note,
+        effect: 3,
+        note: ''
+      });
+    } else {
+      // add a simple log for each dimension
+      DIM_KEYS.forEach(k => {
+        this.data.logs.push({
+          id: this.nextLogId++,
+          dimension: k,
+          date: today,
+          action: DIMENSIONS[k].name + ' 评分: ' + this.data.scores[k] + '分',
+          effect: 3,
+          note: ''
+        });
+      });
+    }
+
+    this.saveData();
+    this.closeModal('modalCheckin');
+    this.navigate(this.currentPage, this.currentDimension);
+  },
+
+  // ─── Log CRUD ───
+  openLogModal(data) {
+    this.selectedStar = 0;
+    document.getElementById('logEditId').value = data ? data.id : '';
+    document.getElementById('logModalTitle').textContent = data ? '&#128203; 编辑记录' : '&#128203; 新增记录';
+    document.getElementById('logDimension').value = data ? data.dimension : this.currentDimension;
+    document.getElementById('logDate').value = data ? data.date : new Date().toISOString().split('T')[0];
+    document.getElementById('logAction').value = data ? data.action : '';
+    document.getElementById('logNote').value = data ? (data.note || '') : '';
+    this.selectStar(data ? data.effect : 0);
+    this.openModal('modalLog');
+  },
+
+  selectStar(val) {
+    this.selectedStar = val;
+    document.querySelectorAll('#logEffect span').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.v) <= val);
+    });
+  },
+
+  saveLog() {
+    const id = document.getElementById('logEditId').value;
+    const dimension = document.getElementById('logDimension').value;
+    const date = document.getElementById('logDate').value;
+    const action = document.getElementById('logAction').value.trim();
+    const note = document.getElementById('logNote').value.trim();
+    const effect = this.selectedStar;
+
+    if (!action) { alert('请输入动作描述'); return; }
+    if (effect === 0) { alert('请选择效果评分'); return; }
+
+    if (id) {
+      const existing = this.data.logs.find(l => l.id == id);
+      if (existing) {
+        existing.dimension = dimension;
+        existing.date = date;
+        existing.action = action;
+        existing.effect = effect;
+        existing.note = note;
+      }
+    } else {
+      this.data.logs.push({
+        id: this.nextLogId++,
+        dimension: dimension,
+        date: date,
+        action: action,
+        effect: effect,
+        note: note
+      });
+    }
+
+    this.saveData();
+    this.closeModal('modalLog');
+    this.renderDetail();
+  },
+
+  editLog(id) {
+    const log = this.data.logs.find(l => l.id == id);
+    if (log) this.openLogModal(log);
+  },
+
+  deleteLog(id) {
+    if (!confirm('确定删除此记录？')) return;
+    this.data.logs = this.data.logs.filter(l => l.id != id);
+    this.saveData();
+    this.renderDetail();
+  },
+
+  // ─── Architecture CRUD ───
+  addArchitectureItem() {
+    document.getElementById('archEditId').value = '';
+    document.getElementById('archModalTitle').textContent = '&#128196; 新增子项';
+    document.getElementById('archName').value = '';
+    document.getElementById('archStatus').value = 'pending';
+    document.getElementById('archNote').value = '';
+    this.openModal('modalArch');
+  },
+
+  editArchitectureItem(id) {
+    const item = this.data.architectures[this.currentDimension].find(a => a.id === id);
+    if (item) {
+      document.getElementById('archEditId').value = id;
+      document.getElementById('archModalTitle').textContent = '&#128196; 编辑子项';
+      document.getElementById('archName').value = item.name;
+      document.getElementById('archStatus').value = item.status;
+      document.getElementById('archNote').value = item.note || '';
+      this.openModal('modalArch');
+    }
+  },
+
+  saveArchitectureItem() {
+    const id = document.getElementById('archEditId').value;
+    const name = document.getElementById('archName').value.trim();
+    const status = document.getElementById('archStatus').value;
+    const note = document.getElementById('archNote').value.trim();
+
+    if (!name) { alert('请输入名称'); return; }
+
+    if (id) {
+      const item = this.data.architectures[this.currentDimension].find(a => a.id === id);
+      if (item) {
+        item.name = name;
+        item.status = status;
+        item.note = note;
+      }
+    } else {
+      this.data.architectures[this.currentDimension].push({
+        id: 'a' + (this.nextArchId++),
+        name: name,
+        status: status,
+        note: note
+      });
+    }
+
+    this.saveData();
+    this.closeModal('modalArch');
+    this.renderArchitecture();
+  },
+
+  deleteArchitectureItem(id) {
+    if (!confirm('确定删除此子项？')) return;
+    this.data.architectures[this.currentDimension] = this.data.architectures[this.currentDimension].filter(a => a.id !== id);
+    this.saveData();
+    this.renderArchitecture();
+  },
+
+  // ─── Weekly Report ───
+  generateWeeklyReport() {
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const from = weekAgo.toISOString().split('T')[0];
+    const to = now.toISOString().split('T')[0];
+
+    // Snapshot current scores
+    let report = '===== 六维人生系统周报 =====\n';
+    report += '周期: ' + from + ' ~ ' + to + '\n';
+    report += '生成时间: ' + now.toLocaleString('zh-CN') + '\n\n';
+
+    report += '--- 当前评分 ---\n';
+    DIM_KEYS.forEach(k => {
+      report += DIMENSIONS[k].icon + ' ' + DIMENSIONS[k].name + ': ' + this.data.scores[k] + '分\n';
+    });
+
+    // 健康指数
+    let total = 0, ws = 0;
+    DIM_KEYS.forEach(k => { total += (this.data.scores[k]||0) * (this.data.weights[k]||1); ws += (this.data.weights[k]||1); });
+    const avg = ws > 0 ? total / ws : 0;
+    report += '\n综合健康指数: ' + avg.toFixed(1) + '分\n\n';
+
+    // Weekly logs
+    const weekLogs = this.data.logs.filter(l => l.date >= from && l.date <= to);
+    weekLogs.sort((a, b) => a.date.localeCompare(b.date));
+
+    report += '--- 本周动态 (' + weekLogs.length + '条) ---\n';
+    if (weekLogs.length > 0) {
+      weekLogs.forEach(l => {
+        report += '[' + l.date + '] ' + DIMENSIONS[l.dimension].name + ' | ' + l.action + ' | ' + '★'.repeat(l.effect) + '\n';
+        if (l.note) report += '  备注: ' + l.note + '\n';
+      });
+    } else {
+      report += '本周暂无动态记录\n';
+    }
+
+    document.getElementById('reportContent').textContent = report;
+    this.openModal('modalReport');
+  },
+
+  copyReport() {
+    const text = document.getElementById('reportContent').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert('周报已复制到剪贴板');
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('周报已复制到剪贴板');
+    });
+  },
+
+  // ─── Export / Import ───
+  exportData() {
+    const blob = new Blob([JSON.stringify(this.data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'five-dim-life-' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.scores && data.architectures) {
+          this.data = data;
+          this.saveData();
+          alert('数据导入成功！');
+          this.navigate(this.currentPage, this.currentDimension);
+        } else {
+          alert('无效的数据文件');
+        }
+      } catch(err) {
+        alert('文件解析失败: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  },
+
+  // ─── Cloud Sync ───
+  openSettings() {
+    document.getElementById('syncUrl').value = this.data.syncConfig.url || '';
+    document.getElementById('syncKey').value = this.data.syncConfig.secretKey || '';
+    document.getElementById('syncStatus').textContent = '';
+    this.openModal('modalSettings');
+  },
+
+  saveSettings() {
+    this.data.syncConfig.url = document.getElementById('syncUrl').value.trim();
+    this.data.syncConfig.secretKey = document.getElementById('syncKey').value.trim();
+    this.saveData();
+    document.getElementById('syncStatus').textContent = '&#10003; 设置已保存';
+  },
+
+  async syncToCloud() {
+    const url = this.data.syncConfig.url;
+    if (!url) { alert('请先配置云端同步 URL'); return; }
+    const statusEl = document.getElementById('syncStatus');
+    statusEl.textContent = '&#8987; 上传中...';
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.data.syncConfig.secretKey) {
+        headers['X-Master-Key'] = this.data.syncConfig.secretKey;
+      }
+      const resp = await fetch(url, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(this.data)
+      });
+      if (resp.ok) {
+        statusEl.textContent = '&#10003; 已成功上传到云端';
+      } else {
+        statusEl.textContent = '&#10007; 上传失败: HTTP ' + resp.status;
+      }
+    } catch(e) {
+      statusEl.textContent = '&#10007; 上传失败: ' + e.message;
+    }
+  },
+
+  async syncFromCloud() {
+    const url = this.data.syncConfig.url;
+    if (!url) { alert('请先配置云端同步 URL'); return; }
+    const statusEl = document.getElementById('syncStatus');
+    statusEl.textContent = '&#8987; 下载中...';
+    try {
+      const headers = {};
+      if (this.data.syncConfig.secretKey) {
+        headers['X-Master-Key'] = this.data.syncConfig.secretKey;
+      }
+      const resp = await fetch(url, { headers: headers });
+      if (resp.ok) {
+        let data;
+        // JSONBin.io v3 wraps data in a "record" field
+        const json = await resp.json();
+        data = json.record || json;
+        if (data.scores && data.architectures) {
+          this.data = data;
+          this.saveData();
+          statusEl.textContent = '&#10003; 已成功从云端下载';
+          this.navigate(this.currentPage, this.currentDimension);
+        } else {
+          statusEl.textContent = '&#10007; 云端数据格式无效';
+        }
+      } else {
+        statusEl.textContent = '&#10007; 下载失败: HTTP ' + resp.status;
+      }
+    } catch(e) {
+      statusEl.textContent = '&#10007; 下载失败: ' + e.message;
+    }
+  },
+
+  // ─── Resource Loop ───
+  renderResourceOverview() {
+    const el = document.getElementById('resourceOverview');
+    if (!el) return;
+    const colors = ['#00f0ff','#7b68ee','#ff6ec7','#4ade80','#facc15','#ff9500'];
+    let html = '';
+    DIM_KEYS.forEach((k, i) => {
+      const res = this.data.resources[k] || { static: [], dynamic: [] };
+      const staticCount = (res.static||[]).length;
+      const dynamicCount = (res.dynamic||[]).length;
+      const avgQuality = staticCount > 0
+        ? (res.static.reduce((s, r) => s + (r.quality||0), 0) / staticCount).toFixed(1)
+        : '--';
+      const sufficientCount = (res.static||[]).filter(r => r.sufficient).length;
+      const pct = staticCount > 0 ? Math.round(sufficientCount / staticCount * 100) : 0;
+      html += '<div class="resource-ov-item" onclick="App.navigate(\'detail\',\'' + k + '\')" style="border-top:3px solid ' + colors[i] + '">' +
+        '<div class="ro-icon">' + DIMENSIONS[k].icon + '</div>' +
+        '<div class="ro-name">' + DIMENSIONS[k].name + '</div>' +
+        '<div class="ro-pct" style="color:' + colors[i] + '">' + avgQuality + '</div>' +
+        '<div class="ro-status">资源充足率 ' + pct + '% &middot; 使用 ' + dynamicCount + '次</div>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+  },
+
+  renderResourceStatic() {
+    const el = document.getElementById('resourceStaticList');
+    const dim = this.currentDimension;
+    const items = (this.data.resources[dim]||{}).static || [];
+    if (items.length === 0) {
+      el.innerHTML = '<div class="res-empty">暂无静态资源，点击下方按钮添加</div>';
+      return;
+    }
+    let html = '<div class="table-wrap"><table class="res-table"><thead><tr>' +
+      '<th>资源名称</th><th>质量</th><th>充足</th><th>组合方式</th><th>缺失资源</th><th>操作</th></tr></thead><tbody>';
+    items.forEach(r => {
+      html += '<tr>' +
+        '<td><strong>' + r.name + '</strong></td>' +
+        '<td>' + '★'.repeat(r.quality||0) + '☆'.repeat(5-(r.quality||0)) + '</td>' +
+        '<td>' + (r.sufficient ? '<span style="color:var(--green)">&#10003; 充足</span>' : '<span style="color:var(--red)">&#10007; 不足</span>') + '</td>' +
+        '<td style="color:var(--text-dim)">' + (r.combination || '--') + '</td>' +
+        '<td style="color:var(--text-dim)">' + (r.missing || '--') + '</td>' +
+        '<td><div class="res-actions">' +
+        '<button class="btn btn-sm" onclick="App.openResourceStaticModal(\'' + r.id + '\')">&#9998;</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="App.deleteResourceStatic(\'' + r.id + '\')">&#10005;</button>' +
+        '</div></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  },
+
+  renderResourceDynamic() {
+    const el = document.getElementById('resourceDynamicList');
+    const dim = this.currentDimension;
+    const items = (this.data.resources[dim]||{}).dynamic || [];
+    if (items.length === 0) {
+      el.innerHTML = '<div class="res-empty">暂无使用记录，点击下方按钮添加</div>';
+      return;
+    }
+    // sort by date descending
+    items.sort((a, b) => b.date.localeCompare(a.date));
+    let html = '<div class="table-wrap"><table class="res-table"><thead><tr>' +
+      '<th>日期</th><th>使用资源</th><th>使用事项</th><th>效率</th><th>产生结果</th><th>新积累</th><th>操作</th></tr></thead><tbody>';
+    items.forEach(r => {
+      html += '<tr>' +
+        '<td style="white-space:nowrap">' + r.date + '</td>' +
+        '<td><strong>' + r.resourceUsed + '</strong></td>' +
+        '<td>' + (r.activity || '') + '</td>' +
+        '<td>' + '★'.repeat(r.efficiency||0) + '☆'.repeat(5-(r.efficiency||0)) + '</td>' +
+        '<td style="color:var(--text-dim)">' + (r.result || '--') + '</td>' +
+        '<td style="color:var(--text-dim)">' + (r.newAccumulation || '--') + '</td>' +
+        '<td><div class="res-actions">' +
+        '<button class="btn btn-sm" onclick="App.openResourceDynamicModal(\'' + r.id + '\')">&#9998;</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="App.deleteResourceDynamic(\'' + r.id + '\')">&#10005;</button>' +
+        '</div></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    el.innerHTML = html;
+  },
+
+  renderLoopStatus() {
+    const el = document.getElementById('loopStatusIndicator');
+    const badgeEl = document.getElementById('loopStatusBadge');
+    if (!el) return;
+    const dim = this.currentDimension;
+    const res = this.data.resources[dim] || { static: [], dynamic: [] };
+    const staticCount = (res.static||[]).length;
+    const dynamicCount = (res.dynamic||[]).length;
+    const hasAccumulation = (res.dynamic||[]).some(r => r.newAccumulation && r.newAccumulation.trim());
+
+    let status, cls;
+    if (staticCount >= 3 && dynamicCount >= 3 && hasAccumulation) {
+      status = '&#10003; 已形成闭环';
+      cls = 'loop-badge-closed';
+    } else if (staticCount > 0 && dynamicCount > 0) {
+      status = '&#8635; 循环中';
+      cls = 'loop-badge-cycling';
+    } else {
+      status = '&#9679; 未启动';
+      cls = 'loop-badge-idle';
+    }
+    el.innerHTML = status;
+    el.className = cls;
+    if (badgeEl) badgeEl.textContent = status.replace(/<[^>]*>/g, '');
+  },
+
+  // ─── Resource Static CRUD ───
+  openResourceStaticModal(id) {
+    this.resStaticQuality = 0;
+    document.getElementById('resStaticEditId').value = id || '';
+    document.getElementById('resStaticModalTitle').textContent = id ? '&#128203; 编辑静态资源' : '&#128203; 新增静态资源';
+    document.getElementById('resStaticName').value = '';
+    document.getElementById('resStaticCombination').value = '';
+    document.getElementById('resStaticMissing').value = '';
+
+    if (id) {
+      const item = (this.data.resources[this.currentDimension]||{}).static.find(r => r.id === id);
+      if (item) {
+        document.getElementById('resStaticName').value = item.name;
+        document.getElementById('resStaticSufficient').value = item.sufficient ? 'true' : 'false';
+        document.getElementById('resStaticCombination').value = item.combination || '';
+        document.getElementById('resStaticMissing').value = item.missing || '';
+        this.selectResStaticQuality(item.quality || 0);
+      }
+    } else {
+      document.getElementById('resStaticSufficient').value = 'true';
+      this.selectResStaticQuality(3);
+    }
+    this.openModal('modalResStatic');
+  },
+
+  selectResStaticQuality(val) {
+    this.resStaticQuality = val;
+    document.querySelectorAll('#resStaticQuality span').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.v) <= val);
+    });
+  },
+
+  saveResourceStatic() {
+    const id = document.getElementById('resStaticEditId').value;
+    const name = document.getElementById('resStaticName').value.trim();
+    const sufficient = document.getElementById('resStaticSufficient').value === 'true';
+    const combination = document.getElementById('resStaticCombination').value.trim();
+    const missing = document.getElementById('resStaticMissing').value.trim();
+    const quality = this.resStaticQuality;
+
+    if (!name) { alert('请输入资源名称'); return; }
+    if (quality === 0) { alert('请选择质量评分'); return; }
+
+    const dim = this.currentDimension;
+    if (!this.data.resources[dim]) this.data.resources[dim] = { static: [], dynamic: [] };
+
+    if (id) {
+      const item = this.data.resources[dim].static.find(r => r.id === id);
+      if (item) {
+        item.name = name;
+        item.quality = quality;
+        item.sufficient = sufficient;
+        item.combination = combination;
+        item.missing = missing;
+      }
+    } else {
+      this.data.resources[dim].static.push({
+        id: 'rs' + (this.nextResStaticId++),
+        name: name,
+        quality: quality,
+        sufficient: sufficient,
+        combination: combination,
+        missing: missing
+      });
+    }
+
+    this.saveData();
+    this.closeModal('modalResStatic');
+    this.renderResourceStatic();
+    this.renderLoopStatus();
+    this.renderResourceOverview();
+  },
+
+  deleteResourceStatic(id) {
+    if (!confirm('确定删除此资源？')) return;
+    const dim = this.currentDimension;
+    if (this.data.resources[dim]) {
+      this.data.resources[dim].static = this.data.resources[dim].static.filter(r => r.id !== id);
+    }
+    this.saveData();
+    this.renderResourceStatic();
+    this.renderLoopStatus();
+    this.renderResourceOverview();
+  },
+
+  // ─── Resource Dynamic CRUD ───
+  openResourceDynamicModal(id) {
+    this.resDynamicEfficiency = 0;
+    document.getElementById('resDynamicEditId').value = id || '';
+    document.getElementById('resDynamicModalTitle').textContent = id ? '&#128200; 编辑使用记录' : '&#128200; 新增使用记录';
+    document.getElementById('resDynamicDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('resDynamicResource').value = '';
+    document.getElementById('resDynamicActivity').value = '';
+    document.getElementById('resDynamicResult').value = '';
+    document.getElementById('resDynamicAccumulation').value = '';
+
+    if (id) {
+      const item = (this.data.resources[this.currentDimension]||{}).dynamic.find(r => r.id === id);
+      if (item) {
+        document.getElementById('resDynamicDate').value = item.date;
+        document.getElementById('resDynamicResource').value = item.resourceUsed;
+        document.getElementById('resDynamicActivity').value = item.activity || '';
+        document.getElementById('resDynamicResult').value = item.result || '';
+        document.getElementById('resDynamicAccumulation').value = item.newAccumulation || '';
+        this.selectResDynamicEfficiency(item.efficiency || 0);
+      }
+    } else {
+      this.selectResDynamicEfficiency(3);
+    }
+    this.openModal('modalResDynamic');
+  },
+
+  selectResDynamicEfficiency(val) {
+    this.resDynamicEfficiency = val;
+    document.querySelectorAll('#resDynamicEfficiency span').forEach(el => {
+      el.classList.toggle('active', parseInt(el.dataset.v) <= val);
+    });
+  },
+
+  saveResourceDynamic() {
+    const id = document.getElementById('resDynamicEditId').value;
+    const date = document.getElementById('resDynamicDate').value;
+    const resourceUsed = document.getElementById('resDynamicResource').value.trim();
+    const activity = document.getElementById('resDynamicActivity').value.trim();
+    const result = document.getElementById('resDynamicResult').value.trim();
+    const newAccumulation = document.getElementById('resDynamicAccumulation').value.trim();
+    const efficiency = this.resDynamicEfficiency;
+
+    if (!resourceUsed) { alert('请输入使用资源'); return; }
+    if (!activity) { alert('请输入使用事项'); return; }
+    if (efficiency === 0) { alert('请选择效率评分'); return; }
+
+    const dim = this.currentDimension;
+    if (!this.data.resources[dim]) this.data.resources[dim] = { static: [], dynamic: [] };
+
+    if (id) {
+      const item = this.data.resources[dim].dynamic.find(r => r.id === id);
+      if (item) {
+        item.date = date;
+        item.resourceUsed = resourceUsed;
+        item.activity = activity;
+        item.efficiency = efficiency;
+        item.result = result;
+        item.newAccumulation = newAccumulation;
+      }
+    } else {
+      this.data.resources[dim].dynamic.push({
+        id: 'rd' + (this.nextResDynamicId++),
+        date: date,
+        resourceUsed: resourceUsed,
+        activity: activity,
+        efficiency: efficiency,
+        result: result,
+        newAccumulation: newAccumulation
+      });
+    }
+
+    this.saveData();
+    this.closeModal('modalResDynamic');
+    this.renderResourceDynamic();
+    this.renderLoopStatus();
+    this.renderResourceOverview();
+  },
+
+  deleteResourceDynamic(id) {
+    if (!confirm('确定删除此记录？')) return;
+    const dim = this.currentDimension;
+    if (this.data.resources[dim]) {
+      this.data.resources[dim].dynamic = this.data.resources[dim].dynamic.filter(r => r.id !== id);
+    }
+    this.saveData();
+    this.renderResourceDynamic();
+    this.renderLoopStatus();
+    this.renderResourceOverview();
+  },
+
+  // ─── Modal ───
+  openModal(id) {
+    document.getElementById(id).classList.add('show');
+  },
+
+  closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+};
+
+// Init on DOM ready
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
